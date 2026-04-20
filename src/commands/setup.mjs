@@ -97,6 +97,7 @@ export async function setup(privateKey, { hub, recovery } = {}) {
   console.error("Generating Ed25519 signer...");
   const signerPrivateKey = ed.utils.randomPrivateKey();
   const signerPublicKey = ed.getPublicKey(signerPrivateKey);
+  const signerPublicKeyHex = bytesToHex(signerPublicKey);
 
   // Step 4: Sign the key request (EIP-712)
   const deadline = BigInt(Math.floor(Date.now() / 1000) + 86400); // 24h from now
@@ -112,31 +113,51 @@ export async function setup(privateKey, { hub, recovery } = {}) {
     primaryType: "SignedKeyRequest",
     message: {
       requestFid: fid,
-      key: bytesToHex(signerPublicKey),
+      key: signerPublicKeyHex,
       deadline,
     },
   });
 
-  // Step 5: ABI-encode the metadata
-  const { encodeAbiParameters, parseAbiParameters } = await import("viem");
-  const metadata = encodeAbiParameters(
-    parseAbiParameters("uint256 requestFid, address requestSigner, bytes signature, uint256 deadline"),
-    [fid, account.address, signature, deadline],
-  );
-
-  // Step 6: Register signer on-chain
-  console.error("Registering signer on Optimism...");
-  const addHash = await walletClient.writeContract({
-    address: KEY_GATEWAY,
-    abi: KEY_GATEWAY_ABI,
-    functionName: "add",
-    args: [1, bytesToHex(signerPublicKey), 1, metadata],
+  // Step 5: Register signer via Warpcast bundler (handles on-chain tx + gas)
+  console.error("Registering signer via Warpcast bundler...");
+  const bundlerResp = await fetch("https://api.warpcast.com/v2/signed-key-requests", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      key: signerPublicKeyHex,
+      requestFid: Number(fid),
+      signature,
+      deadline: Number(deadline),
+    }),
   });
 
-  console.error(`Transaction: ${addHash}`);
-  console.error("Waiting for confirmation...");
-  await publicClient.waitForTransactionReceipt({ hash: addHash });
-  console.error("Signer registered.");
+  if (!bundlerResp.ok) {
+    const err = await bundlerResp.text();
+    throw new Error(`Warpcast bundler failed (${bundlerResp.status}): ${err.substring(0, 300)}`);
+  }
+
+  const bundlerResult = await bundlerResp.json();
+  const token = bundlerResult.result?.signedKeyRequest?.token;
+
+  if (!token) {
+    throw new Error("Warpcast bundler returned no token: " + JSON.stringify(bundlerResult).substring(0, 300));
+  }
+
+  // Step 6: Poll until signer is registered on-chain
+  console.error("Waiting for on-chain confirmation...");
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const pollResp = await fetch(`https://api.warpcast.com/v2/signed-key-request?token=${token}`);
+    if (!pollResp.ok) continue;
+    const pollResult = await pollResp.json();
+    const state = pollResult.result?.signedKeyRequest?.state;
+    if (state === "completed") {
+      console.error("Signer registered.");
+      break;
+    }
+    if (state === "pending") continue;
+    // Unknown state — keep polling
+  }
 
   // Step 7: Save config
   const config = {
