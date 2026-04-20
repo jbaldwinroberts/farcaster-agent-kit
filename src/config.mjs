@@ -2,29 +2,32 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 
-const CONFIG_DIR = join(homedir(), ".farcaster-agent-kit");
-const CONFIG_PATH = join(CONFIG_DIR, "config.json");
+function defaultConfigDir() {
+  return process.env.FAK_CONFIG_DIR || join(homedir(), ".farcaster-agent-kit");
+}
 
 export function getConfigDir() {
-  return CONFIG_DIR;
+  return defaultConfigDir();
 }
 
 export function getConfigPath() {
-  return CONFIG_PATH;
+  return join(getConfigDir(), "config.json");
 }
 
 export function loadConfig() {
-  if (!existsSync(CONFIG_PATH)) {
+  const path = getConfigPath();
+  if (!existsSync(path)) {
     return null;
   }
-  return JSON.parse(readFileSync(CONFIG_PATH, "utf8"));
+  return JSON.parse(readFileSync(path, "utf8"));
 }
 
 export function saveConfig(config) {
-  if (!existsSync(CONFIG_DIR)) {
-    mkdirSync(CONFIG_DIR, { recursive: true });
+  const dir = getConfigDir();
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
   }
-  writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), { mode: 0o600 });
+  writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), { mode: 0o600 });
 }
 
 export function requireConfig() {

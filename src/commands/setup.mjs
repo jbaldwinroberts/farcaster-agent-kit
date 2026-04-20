@@ -152,11 +152,16 @@ export async function setup(privateKey, { hub, recovery } = {}) {
     const pollResult = await pollResp.json();
     const state = pollResult.result?.signedKeyRequest?.state;
     if (state === "completed") {
-      console.error("Signer registered.");
+      console.error("Signer registered on-chain.");
+      console.error("\nNote: it may take 1-2 minutes for hubs to sync your new signer.");
+      console.error("If posting fails with 'invalid signer', wait and retry.");
       break;
     }
+    if (i === 29) {
+      console.error("Timed out waiting for on-chain confirmation. The signer may still be registering.");
+      console.error("Check status at: https://api.warpcast.com/v2/signed-key-request?token=" + token);
+    }
     if (state === "pending") continue;
-    // Unknown state — keep polling
   }
 
   // Step 7: Save config

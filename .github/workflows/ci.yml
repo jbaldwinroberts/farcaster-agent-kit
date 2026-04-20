@@ -6,13 +6,18 @@ on:
     branches: [main]
 
 jobs:
-  lint:
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
       - run: npm install
+      - run: node --test 'src/**/*.test.mjs'
+      - run: node bin/cli.mjs --version
       - run: node bin/cli.mjs help
       - run: node -e "import('./src/index.mjs').then(m => console.log('Exports:', Object.keys(m).join(', ')))"

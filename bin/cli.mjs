@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { readFileSync } from "fs";
+import { join } from "path";
 import { setup } from "../src/commands/setup.mjs";
 import { post } from "../src/commands/post.mjs";
 import { follow } from "../src/commands/follow.mjs";
@@ -8,6 +10,8 @@ import { readMentions, readReplies, readFollowers, readAll } from "../src/comman
 
 const args = process.argv.slice(2);
 const command = args[0];
+
+const pkg = JSON.parse(readFileSync(join(import.meta.dirname, "../package.json"), "utf8"));
 
 function getFlag(flag) {
   const arg = args.find((a) => a.startsWith(`--${flag}=`));
@@ -128,6 +132,12 @@ async function main() {
         break;
       }
 
+      case "version":
+      case "--version":
+      case "-v":
+        console.log(pkg.version);
+        break;
+
       case "help":
       case "--help":
       case "-h":
@@ -141,10 +151,16 @@ async function main() {
         process.exit(1);
     }
   } catch (err) {
-    if (json) {
-      console.error(JSON.stringify({ error: err.message }));
+    const message = err.message || String(err);
+
+    // Friendly messages for common errors
+    if (message.includes("fetch failed") || message.includes("ECONNREFUSED")) {
+      const msg = "Could not connect to the Farcaster hub. Check your internet connection or try a different hub with --hub=<url>";
+      console.error(json ? JSON.stringify({ error: msg }) : `Error: ${msg}`);
+    } else if (message.includes("Not set up yet") || message.includes("No config")) {
+      console.error(json ? JSON.stringify({ error: "Not set up yet. Run: farcaster-agent-kit setup" }) : "Error: Not set up yet. Run: farcaster-agent-kit setup");
     } else {
-      console.error(`Error: ${err.message}`);
+      console.error(json ? JSON.stringify({ error: message }) : `Error: ${message}`);
     }
     process.exit(1);
   }
