@@ -19,6 +19,12 @@ function getFlag(flag) {
   return arg ? arg.split("=").slice(1).join("=") : null;
 }
 
+function getFlagAll(flag) {
+  return args
+    .filter((a) => a.startsWith(`--${flag}=`))
+    .map((a) => a.split("=").slice(1).join("="));
+}
+
 function getPositional(index) {
   // Skip flags, return the nth non-flag argument after the command
   const positionals = args.slice(1).filter((a) => !a.startsWith("--"));
@@ -43,6 +49,8 @@ Options:
   --channel=name              Farcaster channel
   --parent-fid=N              Farcaster reply target FID (with --parent-hash)
   --parent-hash=0x...         Farcaster reply target hash (with --parent-fid)
+  --embed=URL                 Farcaster embed URL (repeatable, max 2). X/Bluesky
+                              ignore — those clients auto-unfurl URLs in text.
   --hub=url                   Custom Farcaster hub (default: crackle.farcaster.xyz)
   --api-key=...               X: Consumer API Key
   --api-key-secret=...        X: Consumer API Secret
@@ -60,6 +68,7 @@ Examples:
   farcaster-agent-kit post "gm"
   farcaster-agent-kit post "gm" --platforms=all
   farcaster-agent-kit post "gm farcaster" --channel=base --platforms=farcaster
+  farcaster-agent-kit post "home lab vitals" --embed=https://frames.atlas-agent.xyz
 `;
 
 async function main() {
@@ -89,7 +98,8 @@ async function main() {
         const parentFid = getFlag("parent-fid") ? parseInt(getFlag("parent-fid")) : null;
         const parentHash = getFlag("parent-hash");
         const platforms = getFlag("platforms");
-        const results = await post(text, { channel, parentFid, parentHash, platforms });
+        const embeds = getFlagAll("embed");
+        const results = await post(text, { channel, parentFid, parentHash, platforms, embeds });
         if (json) {
           console.log(JSON.stringify(results));
         } else {

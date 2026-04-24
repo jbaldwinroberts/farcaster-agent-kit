@@ -8,13 +8,18 @@ export function isConfigured(config) {
   return !!(config?.fid && config?.signerPrivateKey);
 }
 
-export async function post(config, text, { channel, parentFid, parentHash } = {}) {
+export async function post(config, text, { channel, parentFid, parentHash, embeds } = {}) {
+  const embedList = Array.isArray(embeds) ? embeds.filter(Boolean) : [];
+  if (embedList.length > 2) {
+    throw new Error(`Farcaster allows at most 2 embeds per cast (got ${embedList.length})`);
+  }
+
   const hub = getHub(config);
   const signer = createSigner(config.signerPrivateKey);
 
   const castBody = {
     text,
-    embeds: [],
+    embeds: embedList.map((url) => ({ url })),
     embedsDeprecated: [],
     mentions: [],
     mentionsPositions: [],

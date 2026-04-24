@@ -12,6 +12,10 @@ export function resolvePlatforms(arg, config) {
   return arg.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
+// Options passed to platform.post:
+//   channel, parentFid, parentHash — Farcaster-specific
+//   embeds — array of URLs (Farcaster uses explicit embed field; X/Bluesky ignore,
+//            URLs in text are auto-unfurled by those clients)
 export async function postToAll(config, text, opts, platformList) {
   const results = {};
   await Promise.all(

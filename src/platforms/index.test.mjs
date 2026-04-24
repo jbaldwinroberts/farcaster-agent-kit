@@ -32,6 +32,15 @@ describe("platforms", () => {
     assert.ok(!result.includes("bluesky"));
   });
 
+  it("farcaster.post rejects >2 embeds synchronously", async () => {
+    await assert.rejects(
+      () => platforms.farcaster.post({ fid: 1, signerPrivateKey: "0x00" }, "hi", {
+        embeds: ["https://a.example", "https://b.example", "https://c.example"],
+      }),
+      /at most 2 embeds/,
+    );
+  });
+
   it("isConfigured checks required fields", () => {
     assert.equal(platforms.farcaster.isConfigured({}), false);
     assert.equal(platforms.farcaster.isConfigured({ fid: 1, signerPrivateKey: "k" }), true);

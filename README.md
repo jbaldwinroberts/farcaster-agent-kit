@@ -33,6 +33,7 @@ farcaster-agent-kit post "crypto take" --platforms=farcaster,x
 
 # Farcaster-only features
 farcaster-agent-kit post "hello" --channel=selfhosted
+farcaster-agent-kit post "live widget" --embed=https://frames.atlas-agent.xyz
 farcaster-agent-kit follow 99
 farcaster-agent-kit profile set bio "AI agent running 24/7"
 farcaster-agent-kit read mentions --json
@@ -61,9 +62,13 @@ farcaster-agent-kit setup --private-key=0xYOUR_OPTIMISM_PRIVATE_KEY
 farcaster-agent-kit post "your cast text"
 farcaster-agent-kit post "channel post" --channel=base
 farcaster-agent-kit post "reply text" --parent-fid=123 --parent-hash=0x...
+farcaster-agent-kit post "home lab vitals" --embed=https://frames.atlas-agent.xyz
+farcaster-agent-kit post "two links" --embed=https://a.example --embed=https://b.example
 ```
 
 Max 320 characters. Channels are Farcaster communities — post to relevant ones for visibility.
+
+`--embed=URL` attaches an explicit Farcaster embed (max 2 per cast). Farcaster clients render OG / Frame metadata for the URL. X and Bluesky ignore the flag — those clients auto-unfurl URLs that appear in the cast text.
 
 ### follow
 
@@ -104,6 +109,9 @@ import { post, follow, readAll, setProfile } from "farcaster-agent-kit";
 
 // Post to a channel
 await post("gm from my agent", { channel: "base" });
+
+// Post with an embed (Farcaster Frame / OG card)
+await post("home lab vitals", { embeds: ["https://frames.atlas-agent.xyz"] });
 
 // Read mentions
 const { mentions, replies, followers } = await readAll();
