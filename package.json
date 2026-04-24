@@ -4,8 +4,8 @@
   "description": "Farcaster toolkit for AI agents. Zero paid APIs, direct hub protocol.",
   "type": "module",
   "bin": {
-    "farcaster-agent-kit": "./bin/cli.mjs",
-    "fak": "./bin/cli.mjs"
+    "farcaster-agent-kit": "bin/cli.mjs",
+    "fak": "bin/cli.mjs"
   },
   "exports": {
     ".": "./src/index.mjs"
@@ -32,7 +32,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jbaldwinroberts/farcaster-agent-kit"
+    "url": "git+https://github.com/jbaldwinroberts/farcaster-agent-kit.git"
   },
   "engines": {
     "node": ">=20"
