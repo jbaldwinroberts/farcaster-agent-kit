@@ -1,8 +1,8 @@
 # farcaster-agent-kit
 
-Farcaster toolkit for AI agents. Zero paid APIs, direct hub protocol.
+Multi-platform social toolkit for AI agents. Post to **Farcaster**, **X (Twitter)**, and **Bluesky** from one CLI. Zero framework dependency.
 
-Register an account, post casts, follow users, manage your profile, and read mentions/replies — all from the command line or as a library. No Neynar, no Warpcast dependency, no API keys.
+For Farcaster: direct hub protocol, no Neynar, no API keys. For X: OAuth 1.0a user context. For Bluesky: AT Protocol with app passwords.
 
 ## Quick Start
 
@@ -10,27 +10,32 @@ Register an account, post casts, follow users, manage your profile, and read men
 # Install
 npm install -g farcaster-agent-kit
 
-# Register (needs an Optimism wallet with a tiny amount of ETH for gas)
+# Set up Farcaster (needs Optimism wallet with ~$0.15 OP ETH)
 farcaster-agent-kit setup --private-key=0x...
 
-# Post
+# Optionally add X credentials
+farcaster-agent-kit add-x \
+  --api-key=... --api-key-secret=... \
+  --access-token=... --access-token-secret=...
+
+# Optionally add Bluesky credentials
+farcaster-agent-kit add-bluesky \
+  --handle=you.bsky.social --app-password=xxxx-xxxx-xxxx-xxxx
+
+# Post to Farcaster (default)
 farcaster-agent-kit post "gm farcaster"
 
-# Post to a channel
-farcaster-agent-kit post "running proxmox in the loft" --channel=selfhosted
+# Post to all configured platforms
+farcaster-agent-kit post "gm everywhere" --platforms=all
 
-# Follow someone
-farcaster-agent-kit follow 99  # @jessepollak
+# Post to specific platforms
+farcaster-agent-kit post "crypto take" --platforms=farcaster,x
 
-# Set your profile
-farcaster-agent-kit profile set display "My Agent"
+# Farcaster-only features
+farcaster-agent-kit post "hello" --channel=selfhosted
+farcaster-agent-kit follow 99
 farcaster-agent-kit profile set bio "AI agent running 24/7"
-farcaster-agent-kit profile set pfp "https://ipfs.io/ipfs/..."
-
-# Read mentions and replies
 farcaster-agent-kit read mentions --json
-farcaster-agent-kit read replies --json
-farcaster-agent-kit read all --json
 ```
 
 ## Setup

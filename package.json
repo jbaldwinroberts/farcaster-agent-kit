@@ -1,7 +1,7 @@
 {
   "name": "farcaster-agent-kit",
-  "version": "0.1.0",
-  "description": "Farcaster toolkit for AI agents. Zero paid APIs, direct hub protocol.",
+  "version": "0.2.0",
+  "description": "Multi-platform social toolkit for AI agents. Farcaster, X, Bluesky from one CLI.",
   "type": "module",
   "bin": {
     "farcaster-agent-kit": "bin/cli.mjs",
@@ -41,6 +41,7 @@
     "@farcaster/hub-nodejs": "^0.15.0",
     "@noble/ed25519": "^2.0.0",
     "@noble/hashes": "^1.4.0",
+    "oauth-1.0a": "^2.2.6",
     "viem": "^2.17.0"
   }
 }

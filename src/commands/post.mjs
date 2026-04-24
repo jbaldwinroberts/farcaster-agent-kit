@@ -1,37 +1,8 @@
-import { makeCastAdd, FarcasterNetwork } from "@farcaster/hub-nodejs";
-import { fromHex } from "viem";
 import { requireConfig } from "../config.mjs";
-import { createSigner, encodeAndSubmit, getHub } from "../hub.mjs";
+import { resolvePlatforms, postToAll } from "../platforms/index.mjs";
 
-export async function post(text, { channel, parentFid, parentHash } = {}) {
+export async function post(text, { channel, parentFid, parentHash, platforms } = {}) {
   const config = requireConfig();
-  const hub = getHub(config);
-  const signer = createSigner(config.signerPrivateKey);
-
-  const castBody = {
-    text,
-    embeds: [],
-    embedsDeprecated: [],
-    mentions: [],
-    mentionsPositions: [],
-  };
-
-  if (channel) {
-    castBody.parentUrl = `https://warpcast.com/~/channel/${channel}`;
-  }
-
-  if (parentFid && parentHash) {
-    castBody.parentCastId = {
-      fid: parentFid,
-      hash: fromHex(parentHash, "bytes"),
-    };
-  }
-
-  const result = await makeCastAdd(
-    castBody,
-    { fid: config.fid, network: FarcasterNetwork.MAINNET },
-    signer,
-  );
-
-  return encodeAndSubmit(hub, result);
+  const platformList = resolvePlatforms(platforms, config);
+  return postToAll(config, text, { channel, parentFid, parentHash }, platformList);
 }

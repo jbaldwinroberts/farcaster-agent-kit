@@ -7,6 +7,7 @@ import { post } from "../src/commands/post.mjs";
 import { follow } from "../src/commands/follow.mjs";
 import { setProfile, getProfile } from "../src/commands/profile.mjs";
 import { readMentions, readReplies, readFollowers, readAll } from "../src/commands/read.mjs";
+import { addX, addBluesky } from "../src/commands/add-platform.mjs";
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -24,31 +25,41 @@ function getPositional(index) {
   return positionals[index] || null;
 }
 
-const USAGE = `farcaster-agent-kit — Farcaster toolkit for AI agents
+const USAGE = `farcaster-agent-kit — Multi-platform social toolkit for AI agents
 
 Commands:
-  setup                        Register FID and create signer on Optimism
-  post <text>                  Post a cast
-  follow <fid>                 Follow a user
-  profile get [fid]            View profile
-  profile set <field> <value>  Set profile field (display, bio, pfp, url)
-  read [mentions|replies|followers|all]  Read social activity
+  setup                        Register Farcaster FID and create signer on Optimism
+  add-x                        Add X (Twitter) credentials to config
+  add-bluesky                  Add Bluesky credentials to config
+  post <text>                  Post to one or more platforms (default: farcaster)
+  follow <fid>                 Follow a Farcaster user
+  profile get [fid]            View Farcaster profile
+  profile set <field> <value>  Set Farcaster profile field (display, bio, pfp, url)
+  read [mentions|replies|followers|all]  Read Farcaster social activity
 
 Options:
-  --private-key=0x...    Optimism wallet private key (setup only)
-  --channel=name         Post to a channel
-  --parent-fid=N         Reply to a cast (with --parent-hash)
-  --parent-hash=0x...    Reply to a cast (with --parent-fid)
-  --hub=url              Custom hub URL (default: crackle.farcaster.xyz)
-  --json                 Output as JSON
-  --limit=N              Max results for read commands (default: 25)
+  --private-key=0x...         Optimism wallet private key (setup only)
+  --platforms=x,bluesky       Comma-separated platforms or 'all' (post only)
+  --channel=name              Farcaster channel
+  --parent-fid=N              Farcaster reply target FID (with --parent-hash)
+  --parent-hash=0x...         Farcaster reply target hash (with --parent-fid)
+  --hub=url                   Custom Farcaster hub (default: crackle.farcaster.xyz)
+  --api-key=...               X: Consumer API Key
+  --api-key-secret=...        X: Consumer API Secret
+  --access-token=...          X: OAuth1 Access Token
+  --access-token-secret=...   X: OAuth1 Access Token Secret
+  --handle=...                Bluesky: handle (e.g. atlas.bsky.social)
+  --app-password=...          Bluesky: app password
+  --json                      Output as JSON
+  --limit=N                   Max results for read commands (default: 25)
 
 Examples:
   farcaster-agent-kit setup --private-key=0x...
-  farcaster-agent-kit post "gm farcaster" --channel=base
-  farcaster-agent-kit follow 99
-  farcaster-agent-kit profile set bio "AI agent running 24/7"
-  farcaster-agent-kit read mentions --json
+  farcaster-agent-kit add-x --api-key=... --api-key-secret=... --access-token=... --access-token-secret=...
+  farcaster-agent-kit add-bluesky --handle=atlas.bsky.social --app-password=xxxx-xxxx-xxxx-xxxx
+  farcaster-agent-kit post "gm"
+  farcaster-agent-kit post "gm" --platforms=all
+  farcaster-agent-kit post "gm farcaster" --channel=base --platforms=farcaster
 `;
 
 async function main() {
@@ -71,14 +82,44 @@ async function main() {
       case "post": {
         const text = getPositional(0);
         if (!text) {
-          console.error("Usage: farcaster-agent-kit post <text>");
+          console.error("Usage: farcaster-agent-kit post <text> [--platforms=...]");
           process.exit(1);
         }
         const channel = getFlag("channel");
         const parentFid = getFlag("parent-fid") ? parseInt(getFlag("parent-fid")) : null;
         const parentHash = getFlag("parent-hash");
-        const result = await post(text, { channel, parentFid, parentHash });
-        console.log(json ? JSON.stringify(result) : `Posted (${result.hash?.substring(0, 16)}...)`);
+        const platforms = getFlag("platforms");
+        const results = await post(text, { channel, parentFid, parentHash, platforms });
+        if (json) {
+          console.log(JSON.stringify(results));
+        } else {
+          for (const [p, r] of Object.entries(results)) {
+            if (r.error) console.log(`${p}: ERROR — ${r.error}`);
+            else console.log(`${p}: posted`);
+          }
+        }
+        // Non-zero exit if any platform failed
+        if (Object.values(results).some((r) => r.error)) process.exit(2);
+        break;
+      }
+
+      case "add-x": {
+        const result = addX({
+          apiKey: getFlag("api-key"),
+          apiKeySecret: getFlag("api-key-secret"),
+          accessToken: getFlag("access-token"),
+          accessTokenSecret: getFlag("access-token-secret"),
+        });
+        console.log(json ? JSON.stringify(result) : "X credentials saved");
+        break;
+      }
+
+      case "add-bluesky": {
+        const result = addBluesky({
+          handle: getFlag("handle"),
+          appPassword: getFlag("app-password"),
+        });
+        console.log(json ? JSON.stringify(result) : "Bluesky credentials saved");
         break;
       }
 
